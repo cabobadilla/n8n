@@ -1,0 +1,477 @@
+{
+  "name": "Spotify_to_YouTube_SingleLoop",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [260, 400],
+      "id": "manual-trigger",
+      "name": "Start Migration"
+    },
+    {
+      "parameters": {
+        "resource": "playlist",
+        "operation": "getUserPlaylists",
+        "returnAll": true,
+        "limit": 50
+      },
+      "type": "n8n-nodes-base.spotify",
+      "typeVersion": 1,
+      "position": [460, 400],
+      "id": "get-spotify-playlists",
+      "name": "Get Spotify Playlists",
+      "credentials": {
+        "spotifyOAuth2Api": {
+          "id": "xV35bztnPvpo48Nv",
+          "name": "Spotify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [660, 400],
+      "id": "loop-playlists",
+      "name": "Loop Through Playlists"
+    },
+    {
+      "parameters": {
+        "resource": "playlist",
+        "operation": "create",
+        "title": "={{ $json.name }}",
+        "options": {
+          "description": "Migrated from Spotify"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [860, 400],
+      "id": "create-youtube-playlist",
+      "name": "Create YouTube Playlist",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "TDjaI5txo8k4rAgE",
+          "name": "YouTube account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q",
+          "mode": "list",
+          "cachedResultName": "SpotifyPlaylist"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Music"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $('Loop Through Playlists').item.json.name }}",
+            "id_lista_spotify": "={{ $('Loop Through Playlists').item.json.id }}",
+            "owner": "={{ $('Loop Through Playlists').item.json.owner.display_name }}",
+            "id_lista_youtube": "={{ $json.id }}",
+            "status": "created"
+          },
+          "matchingColumns": ["id_lista_spotify"]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [1060, 400],
+      "id": "save-playlist-info",
+      "name": "Save Playlist Info",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "elTA4yIdMYjmkXAj",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "playlist",
+        "operation": "getTracks",
+        "id": "={{ $('Loop Through Playlists').item.json.id }}",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.spotify",
+      "typeVersion": 1,
+      "position": [1260, 400],
+      "id": "get-spotify-tracks",
+      "name": "Get Spotify Tracks",
+      "credentials": {
+        "spotifyOAuth2Api": {
+          "id": "xV35bztnPvpo48Nv",
+          "name": "Spotify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process each song in the playlist\nconst tracks = $input.all();\nconst currentPlaylist = $('Loop Through Playlists').item.json;\nconst youtubePlaylist = $('Create YouTube Playlist').item.json;\n\nconst results = [];\n\nfor (const trackItem of tracks) {\n  const track = trackItem.json.track;\n  \n  if (!track || !track.name || !track.artists || !track.artists[0]) {\n    continue; // Skip invalid tracks\n  }\n  \n  // Create search query\n  const searchQuery = `${track.artists[0].name} ${track.name}`;\n  \n  // Prepare song info for saving\n  const songInfo = {\n    song_name: track.name,\n    uri_song: track.uri,\n    artist: track.artists[0].name,\n    nombre_lista: currentPlaylist.name,\n    id_lista_spotify: currentPlaylist.id,\n    id_lista_youtube: youtubePlaylist.id,\n    search_query: searchQuery,\n    status: 'pending'\n  };\n  \n  results.push({ json: songInfo });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1460, 400],
+      "id": "process-songs",
+      "name": "Process Songs"
+    },
+    {
+      "parameters": {
+        "url": "https://youtube-music-api3.p.rapidapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.search_query }}"
+            },
+            {
+              "name": "type",
+              "value": "song"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "youtube-music-api3.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "0d2cf07a33mshb08c002a01cc143p1a60fbjsnf8b1898a58d4"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1660, 400],
+      "id": "search-youtube-music",
+      "name": "Search YouTube Music",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "song-found-condition",
+              "leftValue": "={{ $json.result && $json.result.length > 0 && $json.result[0].videoId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1860, 400],
+      "id": "check-song-found",
+      "name": "Check if Song Found"
+    },
+    {
+      "parameters": {
+        "resource": "playlistItem",
+        "playlistId": "={{ $('Process Songs').item.json.id_lista_youtube }}",
+        "videoId": "={{ $json.result[0].videoId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [2060, 320],
+      "id": "add-song-to-playlist",
+      "name": "Add Song to Playlist",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "TDjaI5txo8k4rAgE",
+          "name": "YouTube account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge search results with song info\nconst songInfo = $('Process Songs').item.json;\nconst searchResult = $input.item(0).json;\n\n// Update song info with search results\nsongInfo.youtube_video_id = searchResult.result && searchResult.result[0] ? searchResult.result[0].videoId : 'not_found';\nsongInfo.status = searchResult.result && searchResult.result[0] ? 'added' : 'not_found';\nsongInfo.processed_at = new Date().toISOString();\n\n// Remove search_query as it's not needed in sheets\ndelete songInfo.search_query;\n\nreturn { json: songInfo };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2260, 400],
+      "id": "merge-song-data",
+      "name": "Merge Song Data"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q",
+          "mode": "list",
+          "cachedResultName": "SpotifyPlaylist"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2043677018,
+          "mode": "list",
+          "cachedResultName": "Songs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "song_name": "={{ $json.song_name }}",
+            "uri_song": "={{ $json.uri_song }}",
+            "artist": "={{ $json.artist }}",
+            "nombre_lista": "={{ $json.nombre_lista }}",
+            "id_lista_youtube": "={{ $json.id_lista_youtube }}",
+            "id_lista_spotify": "={{ $json.id_lista_spotify }}",
+            "youtube_video_id": "={{ $json.youtube_video_id }}",
+            "status": "={{ $json.status }}",
+            "processed_at": "={{ $json.processed_at }}"
+          },
+          "matchingColumns": ["uri_song"]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [2460, 400],
+      "id": "save-song-info",
+      "name": "Save Song Info",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "elTA4yIdMYjmkXAj",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q",
+          "mode": "list",
+          "cachedResultName": "SpotifyPlaylist"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Music"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_lista_spotify": "={{ $('Loop Through Playlists').item.json.id }}",
+            "status": "completed",
+            "completed_at": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": ["id_lista_spotify"]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [2660, 400],
+      "id": "mark-playlist-complete",
+      "name": "Mark Playlist Complete",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "elTA4yIdMYjmkXAj",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Start Migration": {
+      "main": [
+        [
+          {
+            "node": "Get Spotify Playlists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Spotify Playlists": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Playlists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Through Playlists": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Create YouTube Playlist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create YouTube Playlist": {
+      "main": [
+        [
+          {
+            "node": "Save Playlist Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Playlist Info": {
+      "main": [
+        [
+          {
+            "node": "Get Spotify Tracks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Spotify Tracks": {
+      "main": [
+        [
+          {
+            "node": "Process Songs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Songs": {
+      "main": [
+        [
+          {
+            "node": "Search YouTube Music",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search YouTube Music": {
+      "main": [
+        [
+          {
+            "node": "Check if Song Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Song Found": {
+      "main": [
+        [
+          {
+            "node": "Add Song to Playlist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Song Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Song to Playlist": {
+      "main": [
+        [
+          {
+            "node": "Merge Song Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Song Data": {
+      "main": [
+        [
+          {
+            "node": "Save Song Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Song Info": {
+      "main": [
+        [
+          {
+            "node": "Mark Playlist Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Playlist Complete": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Playlists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
