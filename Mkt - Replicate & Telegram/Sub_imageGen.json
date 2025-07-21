@@ -1,0 +1,80 @@
+{
+  "name": "Sub_imageGen",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro-ultra/predictions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Token GETYOURTOKEN"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"input\": {\n    \"raw\": false,\n    \"prompt\": \"{{ $json.prompt }}\",\n    \"aspect_ratio\": \"3:4\",\n    \"output_format\": \"jpg\",\n    \"safety_tolerance\": 6\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        -20
+      ],
+      "id": "daf0cc3b-1607-4168-b549-49eff38df2c7",
+      "name": "img_generator"
+    },
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"prompt\": \"a string\"\n}"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        -20
+      ],
+      "id": "b50d4871-9516-425b-96f9-d7c91d99a806",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "img_generator": {
+      "main": [
+        []
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "img_generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5554e829-070b-4ab3-89e8-802cb1dbd216",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "01fa02556f5dc3ba5878416fc205d11b67b9295ba7e28fa11ccc7653585040cf"
+  },
+  "id": "j9YqroqOiezsOQfU",
+  "tags": []
+}

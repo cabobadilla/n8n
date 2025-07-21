@@ -1,0 +1,1089 @@
+{
+  "name": "GetMyMusic",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2360,
+        1180
+      ],
+      "id": "e58160bb-980a-4d14-8634-fd5eea4c7824",
+      "name": "Start Migration"
+    },
+    {
+      "parameters": {
+        "resource": "playlist",
+        "operation": "getUserPlaylists",
+        "limit": 11
+      },
+      "type": "n8n-nodes-base.spotify",
+      "typeVersion": 1,
+      "position": [
+        -2140,
+        1180
+      ],
+      "id": "46bab114-b0e3-4974-8adf-d716786820a4",
+      "name": "Get Spotify Playlists",
+      "credentials": {
+        "spotifyOAuth2Api": {
+          "id": "xV35bztnPvpo48Nv",
+          "name": "Spotify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1220,
+        1180
+      ],
+      "id": "3885c601-98f0-4feb-b3cd-5a62a9d6e01f",
+      "name": "Loop Through Playlists"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q",
+          "mode": "list",
+          "cachedResultName": "SpotifyPlaylist"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Music"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_lista_spotify": "={{ $('Loop Through Playlists').item.json.id_lista_spotify }}",
+            "id_lista_youtube": "={{ $('CreatePlaylist').item.json.id }}"
+          },
+          "matchingColumns": [
+            "id_lista_spotify"
+          ],
+          "schema": [
+            {
+              "id": "id_lista_spotify",
+              "displayName": "id_lista_spotify",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "owner",
+              "displayName": "owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "id_lista_youtube",
+              "displayName": "id_lista_youtube",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "done",
+              "displayName": "done",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -660,
+        1240
+      ],
+      "id": "ff6c10bb-674f-4f55-8803-31f6222777c1",
+      "name": "Save Playlist Info",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "elTA4yIdMYjmkXAj",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "playlist",
+        "operation": "getTracks",
+        "id": "={{ $json.id_lista_spotify }}\n",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.spotify",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        1160
+      ],
+      "id": "a91afcce-8fbe-4b76-8e64-2cc5271e730d",
+      "name": "Get Spotify Tracks",
+      "credentials": {
+        "spotifyOAuth2Api": {
+          "id": "xV35bztnPvpo48Nv",
+          "name": "Spotify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://youtube-music-api3.p.rapidapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.song_name }}"
+            },
+            {
+              "name": "type",
+              "value": "song"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "youtube-music-api3.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "0d2cf07a33mshb08c002a01cc143p1a60fbjsnf8b1898a58d4"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -120,
+        1120
+      ],
+      "id": "f30d3549-b023-4c25-902d-52651b10fbea",
+      "name": "Search YouTube Music",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "song-found-condition",
+              "leftValue": "={{ $json.result && $json.result.length > 0 && $json.result[0].videoId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        60,
+        1200
+      ],
+      "id": "fc851ce6-2aba-4426-8ccc-860dc955e9b0",
+      "name": "Check if Song Found"
+    },
+    {
+      "parameters": {
+        "resource": "playlistItem",
+        "playlistId": "={{ $('Save Song Info').item.json.id_lista_youtube }}",
+        "videoId": "={{ $json.result[0].videoId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        280,
+        1120
+      ],
+      "id": "f48481f1-11c7-41f8-ab43-d4b21b0b0f3b",
+      "name": "Add Song to Playlist",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "TDjaI5txo8k4rAgE",
+          "name": "YouTube account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q",
+          "mode": "list",
+          "cachedResultName": "SpotifyPlaylist"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Music"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_lista_spotify": "={{ $('Loop Through Playlists').item.json.id_lista_spotify }}",
+            "done": "Done"
+          },
+          "matchingColumns": [
+            "id_lista_spotify"
+          ],
+          "schema": [
+            {
+              "id": "id_lista_spotify",
+              "displayName": "id_lista_spotify",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "owner",
+              "displayName": "owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "id_lista_youtube",
+              "displayName": "id_lista_youtube",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "done",
+              "displayName": "done",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        640,
+        1180
+      ],
+      "id": "c728906e-1bfc-4806-809a-e170075f0f85",
+      "name": "Mark Playlist Complete",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "elTA4yIdMYjmkXAj",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q",
+          "mode": "list",
+          "cachedResultName": "SpotifyPlaylist"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2043677018,
+          "mode": "list",
+          "cachedResultName": "Songs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "uri_song": "={{ $('Save Song Info').item.json.uri_song }}",
+            "done": "Done"
+          },
+          "matchingColumns": [
+            "uri_song"
+          ],
+          "schema": [
+            {
+              "id": "id_lista_spotify",
+              "displayName": "id_lista_spotify",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "nombre_lista",
+              "displayName": "nombre_lista",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "uri_song",
+              "displayName": "uri_song",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "song_name",
+              "displayName": "song_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "artist",
+              "displayName": "artist",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "id_lista_youtube",
+              "displayName": "id_lista_youtube",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "done",
+              "displayName": "done",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        460,
+        1180
+      ],
+      "id": "62d97feb-db4c-452c-823f-fafab0b6f47b",
+      "name": "Update Song Info",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "elTA4yIdMYjmkXAj",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q",
+          "mode": "list",
+          "cachedResultName": "SpotifyPlaylist"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2043677018,
+          "mode": "list",
+          "cachedResultName": "Songs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "song_name": "={{ $json.track.name }}",
+            "uri_song": "={{ $json.track.uri }}",
+            "artist": "={{ $json.track.artists[0].name }}",
+            "nombre_lista": "={{ $('Save Playlist Info').item.json.name }}",
+            "id_lista_youtube": "={{ $('Save Playlist Info').item.json.id_lista_youtube }}",
+            "id_lista_spotify": "={{ $('Save Playlist Info').item.json.id_lista_spotify }}"
+          },
+          "matchingColumns": [
+            "uri_song"
+          ],
+          "schema": [
+            {
+              "id": "id_lista_spotify",
+              "displayName": "id_lista_spotify",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre_lista",
+              "displayName": "nombre_lista",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "uri_song",
+              "displayName": "uri_song",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "song_name",
+              "displayName": "song_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "artist",
+              "displayName": "artist",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "id_lista_youtube",
+              "displayName": "id_lista_youtube",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "done",
+              "displayName": "done",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -300,
+        1200
+      ],
+      "id": "1910c42a-ae4f-4242-a1f4-a29b015342e2",
+      "name": "Save Song Info",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "elTA4yIdMYjmkXAj",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "01fdef74-42ed-475c-b236-a16753f2a568",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "Forbidden",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -860,
+        1160
+      ],
+      "id": "f1e4ff03-faaa-4438-9c8e-1f658d3ef766",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "resource": "playlist",
+        "operation": "create",
+        "title": "={{ $json.name }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -1020,
+        1240
+      ],
+      "id": "20f75f2b-16fd-41b1-9882-67acad853657",
+      "name": "CreatePlaylist",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "TDjaI5txo8k4rAgE",
+          "name": "YouTube account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "Replace Me",
+      "typeVersion": 1,
+      "position": [
+        820,
+        1200
+      ],
+      "id": "c9928a7b-8839-4758-ad69-efefe91181df"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q",
+          "mode": "list",
+          "cachedResultName": "SpotifyPlaylist",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Music",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_lista_spotify": "={{ $json.id }}",
+            "name": "={{ $json.name }}",
+            "owner": "={{ $json.owner.display_name }}"
+          },
+          "matchingColumns": [
+            "id_lista_spotify"
+          ],
+          "schema": [
+            {
+              "id": "id_lista_spotify",
+              "displayName": "id_lista_spotify",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "owner",
+              "displayName": "owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "id_lista_youtube",
+              "displayName": "id_lista_youtube",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "done",
+              "displayName": "done",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -1920,
+        1180
+      ],
+      "id": "778e4ad8-03c3-415d-affc-d7b923e66dae",
+      "name": "_appendLista",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "elTA4yIdMYjmkXAj",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q",
+          "mode": "list",
+          "cachedResultName": "SpotifyPlaylist",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Music",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dQke-LL5zWzMHT4bcCO2jC9LBzPATcjrCzuuL9kyY7Q/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -1700,
+        1180
+      ],
+      "id": "bb1d9ae5-55a1-448c-81e8-4c10b110ac07",
+      "name": "_getList2Process",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "elTA4yIdMYjmkXAj",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "**Get The List**",
+        "height": 400,
+        "width": 600,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2180,
+        1060
+      ],
+      "id": "206df3f3-f34a-4bd5-8fb3-ae16d7fffe77",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "**New Playlist**",
+        "height": 400,
+        "width": 260
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1560,
+        1060
+      ],
+      "id": "826cb010-c611-4ffa-adde-9329b3a0e0e5",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c5b875d1-2749-4447-a16b-eee16845e653",
+              "leftValue": "={{ $json.done }}",
+              "rightValue": "Done",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1480,
+        1120
+      ],
+      "id": "1e9f9c2e-ce12-424d-92e3-4171f71bfec1",
+      "name": "justNewList"
+    },
+    {
+      "parameters": {
+        "content": "**Loop the Playlist**",
+        "height": 400,
+        "width": 2280,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        1060
+      ],
+      "id": "83b30ede-2e7a-4a32-b11b-cf5f9f1c90d3",
+      "name": "Sticky Note2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start Migration": {
+      "main": [
+        [
+          {
+            "node": "Get Spotify Playlists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Spotify Playlists": {
+      "main": [
+        [
+          {
+            "node": "_appendLista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Through Playlists": {
+      "main": [
+        [],
+        [
+          {
+            "node": "CreatePlaylist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Playlist Info": {
+      "main": [
+        [
+          {
+            "node": "Get Spotify Tracks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Spotify Tracks": {
+      "main": [
+        [
+          {
+            "node": "Save Song Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search YouTube Music": {
+      "main": [
+        [
+          {
+            "node": "Check if Song Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Song Found": {
+      "main": [
+        [
+          {
+            "node": "Add Song to Playlist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Add Song to Playlist": {
+      "main": [
+        [
+          {
+            "node": "Update Song Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Playlist Complete": {
+      "main": [
+        [
+          {
+            "node": "Replace Me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Song Info": {
+      "main": [
+        [
+          {
+            "node": "Mark Playlist Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Song Info": {
+      "main": [
+        [
+          {
+            "node": "Search YouTube Music",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreatePlaylist": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Save Playlist Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Me": {
+      "main": [
+        [
+          {
+            "node": "Loop Through Playlists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "_appendLista": {
+      "main": [
+        [
+          {
+            "node": "_getList2Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "_getList2Process": {
+      "main": [
+        [
+          {
+            "node": "justNewList",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "justNewList": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Loop Through Playlists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c8b555be-a584-4dcf-b756-a5ea30f35611",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "01fa02556f5dc3ba5878416fc205d11b67b9295ba7e28fa11ccc7653585040cf"
+  },
+  "id": "se5MJNHznFykrtmn",
+  "tags": []
+}

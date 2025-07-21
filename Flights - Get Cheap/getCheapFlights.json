@@ -1,0 +1,188 @@
+{
+  "name": "getCheapFlights",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hola, soy tu asistente de viajes",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f3f4b051-8902-4e62-84e9-8dd9e82a5ca6",
+      "name": "When chat message received",
+      "webhookId": "ed104379-6c17-4635-821a-c83b44857c55"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=##Rol\nEres un asistente de búsqueda de tickets de vuelo económicos\n\n##Actividades\n1) saluda cordialmente e indica la fecha actual (considerando {{ $today }}), pide al usuario el origen y destino del vuelo que quiere buscar (transforma de inmediato las ciudades a códigos de aeropuerto), luego pide la duración esperada del viaje (e.g. 3 días), luego pide el rango de fechas en el cual el usuario quiere viajar (e.g. salida 22 de noviembre y regreso 30 de noviembre 2025)\n\n2) presenta al usuario un resumen de los datos de la búsqueda a realizar: ciudad de origen + código de aeropuerto, ciudad de destino + código de aeropuerto, duración del viaje, rango de fechas del viaje y pide confirmar \n(e.g. Origen: Santiago de Chile (SCL)\n      Destino: Roma (FCO) \n      Duración: 3 dias \n      Desde: 22 de noviembre 2025\n      Hasta: 30 de noviembre 2025)\n \n3) realiza una búsqueda de vuelos en la herramienta _flights, usa los códigos de aeropuerto y las fechas para la duración del viaje ingresada por el usuario, esto para encontrar el mejor precio para las opciones del usuario\n\n4) recupera la data y preséntala al usuario de forma ordenada por fecha de salida (remarcando en negrita la opcion mas barata y el vuelo mas corto o rápido) indicando las fechas de salida y llegada propuestas, la linea aerea y los precios de cada ticket\n\n5) pregunta al usuario si quiere recibir la informacion por mail, pide el email. Con este email ejecuta la herramienta _sendMail usando la direccion de email, en el asunto genera un texto breve que describa el viaje solicitado (e.g. Cotización viaje de Santiago a Miami por 3 dias), en el cuerpo del correo coloca el detalle de los vuelos en un formato de facil lectura, al final del cuerpo del correo (despues de la data) agrega la frase \"Vuelos rastreados por tu Agente de AI\"\n\n##Consideraciones\n- es necesario realizar tantas búsquedas como veces la duración pueda entrar en el rango de fechas\n- las fechas de busqueda no pueden ser del pasado, considerando que hoy es {{ $today }}\n- en caso que el usuario ingrese solo un numero en la duración esperada de dias, asume que son dias"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        312,
+        0
+      ],
+      "id": "18453ceb-d29a-46ff-b7c6-d0b4e35f732d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        220
+      ],
+      "id": "6743f170-e3cb-4bdf-8f0c-8fa179f93a70",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "iiQfR6BX0n2M6jtk",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "google_flights",
+        "departure_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Departure_airport_code___location_kgmid__departure_id_', ``, 'string') }}",
+        "arrival_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Arrival_airport_code___location_kgmid__arrival_id_', ``, 'string') }}",
+        "outbound_date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Outbound_Date__outbound_date_', ``, 'string') }}",
+        "return_date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_Date__return_date_', ``, 'string') }}",
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-serpapi.serpApiTool",
+      "typeVersion": 1,
+      "position": [
+        460,
+        220
+      ],
+      "id": "32d972dc-6f1c-4171-9066-2d0d4d8f5819",
+      "name": "_flights",
+      "credentials": {
+        "serpApi": {
+          "id": "tCLz2Ynru9v78fqE",
+          "name": "SerpApi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        340,
+        220
+      ],
+      "id": "8627357f-082b-42e1-8c4e-23d5a35510e9",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        580,
+        220
+      ],
+      "id": "a54691a0-66d8-4a29-bf8d-4464f626f8cc",
+      "name": "_sendMail",
+      "webhookId": "1f046617-457a-41ad-a4cd-b6dee643030e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "jXIedyMCAXIocc0C",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "_flights": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "_sendMail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a7bf3cb3-2432-45c7-bf4f-bd0be0dc1895",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "01fa02556f5dc3ba5878416fc205d11b67b9295ba7e28fa11ccc7653585040cf"
+  },
+  "id": "P3SJqOdVpkS1JsG9",
+  "tags": []
+}
