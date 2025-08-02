@@ -1,0 +1,139 @@
+{
+  "name": "Test Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d35442d7-40c7-4ffd-9181-82c1d120d1bf",
+      "name": "Telegram Trigger",
+      "webhookId": "65d4aa83-9f96-4684-a9b0-46a547ebf6d7",
+      "credentials": {
+        "telegramApi": {
+          "id": "i3sdwCln3fUQwTIM",
+          "name": "rcm_Libro"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "##Rol\neres un recomendador de libros\n\n#Actividades\n1) saluda y da la bienvenida\n\n2) pregunta por el tópico del libro que le interesa al usuario\n\n3) busca una lista de 10 libros y genera un ranking de los mejores en función de las criticas\n\n4) presenta el listado al usuario"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "2caed902-9133-4e71-ad07-48141f0da436",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        180,
+        200
+      ],
+      "id": "af28be65-c084-429a-8500-dc4f5a439478",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "iiQfR6BX0n2M6jtk",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        596,
+        0
+      ],
+      "id": "3f0a8879-5dd5-4330-92ce-03cc7683fd8f",
+      "name": "Telegram",
+      "webhookId": "e8d5877f-9c58-47d9-a9c2-a6d493dc5fb1",
+      "credentials": {
+        "telegramApi": {
+          "id": "YrxHisDipnpDVAom",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3094bb29-cad9-494d-b0de-428e64c2af1a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "01fa02556f5dc3ba5878416fc205d11b67b9295ba7e28fa11ccc7653585040cf"
+  },
+  "id": "Rszs12efwgULgy0h",
+  "tags": []
+}
